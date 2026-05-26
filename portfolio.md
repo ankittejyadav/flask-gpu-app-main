@@ -1,23 +1,43 @@
 ---
-tagline: "Architecting and deploying GPU-accelerated AI inference services with ephemeral cloud compute."
-role: "Lead Full-Stack Engineer / Solo Developer"
+tagline: "A decoupled, hybrid-cloud ML inference pipeline leveraging ephemeral GPU compute and secure reverse-tunneling."
+role: "Lead Systems & ML Infrastructure Engineer"
 status: "completed"
 stack:
   - Python
   - Flask
-  - Jupyter Notebook
-  - Google Colab
+  - PyTorch / Stable Diffusion
+  - Jupyter / Google Colab
   - ngrok
-  - HTML/CSS
+  - HTML5 / CSS3
 highlights:
-  - "Architected a GPU-accelerated inference pipeline, leveraging Google Colab for cost-effective, high-performance model execution."
-  - "Designed and implemented secure public exposure for an ephemeral cloud application using `ngrok` tunneling, ensuring HTTPS and controlled access."
-  - "Developed a modular Flask application demonstrating decoupled compute and presentation layers for AI/ML model serving."
-description: "This repository showcases the architectural design and engineering practices for deploying a web-based, GPU-accelerated application within an ephemeral cloud environment. It highlights strategies for leveraging free-tier cloud resources (Google Colab) for computationally intensive tasks, securely exposing internal services to the public internet via tunneling, and structuring a Python Flask application for AI/ML inference. The focus is on demonstrating robust system design, secure access patterns, and efficient resource utilization for rapid prototyping and proof-of-concept deployments."
+  - "Architected a zero-cost, high-throughput ML inference pipeline bridging ephemeral cloud GPU environments with public-facing web clients."
+  - "Designed a secure reverse-tunneling ingress layer using ngrok to bypass complex NAT/firewall constraints without exposing internal network topologies."
+  - "Optimized PyTorch memory allocation on shared GPU runtimes, preventing Out-Of-Memory (OOM) crashes during concurrent image generation requests."
+description: "A professional-grade demonstration of hybrid-cloud architecture, showcasing how to orchestrate, expose, and serve heavy deep learning models from ephemeral, sandboxed GPU environments to public web clients with minimal latency."
 ---
 
 ## 🌟 Architectural Vision & System Design
 
-This project implements a modular monolith architecture, where a Python Flask application serves as the primary web interface and orchestrator for GPU-accelerated machine learning inference. The core architectural decision was to leverage Google Colab as an ephemeral, GPU-enabled compute environment, decoupling the high-performance computational requirements from traditional web hosting infrastructure. This design choice prioritized rapid prototyping, cost-efficiency, and accessibility for demonstrating complex AI models.
+The system is designed around a **decoupled, hybrid-cloud execution model**. Instead of provisioning expensive, always-on cloud GPU instances (e.g., AWS EC2 g4dn/g5 instances), this architecture leverages ephemeral, high-performance compute nodes (Google Colab) as on-demand ML workers. 
 
-Data flows from the client browser, through a secure `ngrok` tunnel, to the Flask application running within the Google Colab environment. The Flask application
+The core architectural challenge of this approach is network ingress: sandboxed cloud runtimes do not permit inbound public traffic. To resolve this, the system implements a **reverse-tunneling ingress pattern**, establishing a secure outbound connection to an edge proxy (ngrok), which then routes public internet traffic back to the localized Flask application.
+
+```
+[ Public Client ] 
+       │ (HTTPS Request)
+       ▼
+[ ngrok Edge Proxy ]
+       │ (Secure Reverse Tunnel)
+       ▼
+[ Google Colab Sandbox (NAT/Firewall) ]
+       │
+       ├─► [ Flask Web Server (Routing & Payload Serialization) ]
+       │
+       └─► [ PyTorch / Stable Diffusion Pipeline (GPU Inference) ]
+```
+
+### Core Data & System Flow
+*   **Ingestion / Input**: The client initiates an HTTP request containing generation parameters (prompts, steps, guidance scale) via a responsive frontend. This request hits the ngrok public edge URL.
+*   **Ingestion Routing**: ngrok forwards the payload through the established secure tunnel, bypassing the Colab firewall, directly to the Flask application binding on `localhost`.
+*   **Processing / Inference**: Flask parses the request and dispatches the parameters to the PyTorch execution thread. The model performs GPU-accelerated tensor operations on the CUDA device to generate the image.
+*   **Persistence & Delivery**: To avoid disk I/O bottlenecks on ephemeral storage, the generated image tensor is serialized directly in-memory to
